@@ -1,5 +1,4 @@
-:root,
-[data-theme="dark"] {
+:root {
   color-scheme: dark;
   --bg: #181818;
   --sidebar: #141414;

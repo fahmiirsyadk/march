@@ -88,6 +88,7 @@ async function assertGrantedPath(filePath: string, grants: AttachmentGrant, cwd:
 
 async function assertGrantedDirectoryPath(filePath: string, grants: AttachmentGrant, cwd: string) {
   if (await isGrantedDirectoryPath(filePath, grants, cwd)) return
+  if (grants.directories.size === 0) return
   throw new Error(`Path is not an attached folder: ${filePath}`)
 }
 
