@@ -1,0 +1,4 @@
+- `desktop/` is backend runtime code for threads, skills, and terminal lanes.
+- Keep entrypoints stable: `pi-threads.ts`, `pi-skills.ts`, `skill-creator-session.ts`, and `terminal/manager.ts`.
+- Update `shared/*` contracts and the matching action router/handlers together.
+- Keep event/state flow on the existing publisher and `thread-state-db.ts` paths.

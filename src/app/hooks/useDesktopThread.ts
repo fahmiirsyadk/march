@@ -1,0 +1,34 @@
+import { useQuery } from '@tanstack/react-query'
+import { getPersistedSessionPath } from '../../../shared/session-paths'
+import type { ThreadData } from '../desktop/types'
+import { desktopQueryKeys, getThreadQuery } from '../query/desktop-query'
+
+export function useDesktopThreadQuery(
+  sessionPath: string | null | undefined,
+  refreshKey = 0,
+  historyCompactions = 0,
+) {
+  const persistedSessionPath = getPersistedSessionPath(sessionPath)
+
+  return useQuery<ThreadData | null>({
+    queryKey: persistedSessionPath
+      ? desktopQueryKeys.thread(persistedSessionPath, refreshKey, historyCompactions)
+      : ['desktop', 'thread', null, refreshKey, historyCompactions],
+    queryFn: () =>
+      persistedSessionPath
+        ? getThreadQuery(persistedSessionPath, historyCompactions)
+        : Promise.resolve(null),
+    enabled: Boolean(persistedSessionPath),
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+}
+
+export function useDesktopThread(
+  sessionPath: string | null | undefined,
+  refreshKey = 0,
+  historyCompactions = 0,
+) {
+  const query = useDesktopThreadQuery(sessionPath, refreshKey, historyCompactions)
+
+  return query.data ?? null
+}

@@ -1,0 +1,5 @@
+- `shared/` is a cross-runtime contract boundary; treat edits here as API changes.
+- Keep `desktop-actions.ts`, `desktop-action-contracts.ts`, and `desktop-action-coverage.ts` in sync.
+- Re-verify all consumers when contracts change: the server handler, desktop runtime modules, and the frontend bridge.
+- Keep shared helpers pure and runtime-agnostic.
+- After edits, run the targeted shared tests and the affected runtime typechecks.
