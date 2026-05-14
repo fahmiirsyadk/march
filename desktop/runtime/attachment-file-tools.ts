@@ -132,6 +132,19 @@ export async function createAttachmentFileTools(options: {
   const readExecute = readTool.execute.bind(readTool)
   readTool.execute = async (toolCallId, params, signal, onUpdate, ctx) => {
     await assertGrantedPath(params.path, grants, options.cwd)
+    const resolved = await tryRealpath(params.path)
+    try {
+      const statResult = await stat(resolved)
+      if (statResult.isDirectory()) {
+        return {
+          content: [
+            { type: 'text' as const, text: `Error: ${params.path} is a directory, not a file` },
+          ],
+        }
+      }
+    } catch {
+      // Fall through to actual read
+    }
     return await readExecute(toolCallId, params, signal, onUpdate, ctx)
   }
 
@@ -139,6 +152,22 @@ export async function createAttachmentFileTools(options: {
   const lsExecute = lsTool.execute.bind(lsTool)
   lsTool.execute = async (toolCallId, params, signal, onUpdate, ctx) => {
     await assertGrantedDirectoryPath(params.path ?? '.', grants, options.cwd)
+    const targetPath = params.path ?? '.'
+    const resolved = await tryRealpath(
+      targetPath === '.' ? options.cwd : resolveToolPath(targetPath, options.cwd),
+    )
+    try {
+      const statResult = await stat(resolved)
+      if (statResult.isFile()) {
+        return {
+          content: [
+            { type: 'text' as const, text: `Error: ${targetPath} is a file, not a directory` },
+          ],
+        }
+      }
+    } catch {
+      // Fall through to actual ls
+    }
     return await lsExecute(toolCallId, params, signal, onUpdate, ctx)
   }
 
