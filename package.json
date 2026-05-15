@@ -52,6 +52,7 @@
     "@xterm/xterm": "5.5.0",
     "better-sqlite3": "^12.2.0",
     "esbuild": "0.27.7",
+    "fuzzysort": "^3.1.0",
     "lucide-react": "^0.525.0",
     "node-pty": "^1.1.0",
     "prismjs": "^1.30.0",

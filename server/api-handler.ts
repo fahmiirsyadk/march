@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import fuzzysort from 'fuzzysort'
 import type { RuntimeBridge } from './runtime-bridge.js'
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -378,6 +379,120 @@ function direntKind(entry: fs.Dirent): 'directory' | 'file' | null {
   return null
 }
 
+const ignoredSearchDirs = new Set([
+  '.git',
+  '.hg',
+  '.svn',
+  'node_modules',
+  'build',
+  'dist',
+  'out',
+  '.next',
+  '.turbo',
+  '.vite',
+])
+
+type SearchEntry = {
+  path: string
+  name: string
+  relativePath: string
+  kind: 'directory' | 'file'
+}
+
+const searchIndexCache = new Map<string, { entries: SearchEntry[]; expiresAt: number }>()
+const SEARCH_CACHE_TTL_MS = 30_000
+
+async function readSearchDir(
+  currentPath: string,
+  entries: SearchEntry[],
+  pendingDirs: string[],
+  rootPath: string,
+  maxEntries: number,
+) {
+  let dirEntries: fs.Dirent[]
+  try {
+    dirEntries = await fs.promises.readdir(currentPath, { withFileTypes: true })
+  } catch {
+    return 0
+  }
+  let count = 0
+  for (const entry of dirEntries) {
+    if (entry.name.startsWith('.')) continue
+    count += 1
+    if (count > maxEntries) break
+    const entryPath = path.join(currentPath, entry.name)
+    const relativePath = path.relative(rootPath, entryPath)
+    if (entry.isDirectory()) {
+      if (!ignoredSearchDirs.has(entry.name)) pendingDirs.push(entryPath)
+      entries.push({ path: entryPath, name: entry.name, relativePath, kind: 'directory' })
+    } else if (entry.isFile()) {
+      entries.push({ path: entryPath, name: entry.name, relativePath, kind: 'file' })
+    }
+  }
+  return count
+}
+
+async function buildSearchIndex(rootPath: string): Promise<SearchEntry[]> {
+  const cached = searchIndexCache.get(rootPath)
+  if (cached && cached.expiresAt > Date.now()) return cached.entries
+
+  const entries: SearchEntry[] = []
+  const pendingDirs = [rootPath]
+  let visited = 0
+  const maxEntries = 50_000
+
+  while (pendingDirs.length > 0 && visited < maxEntries) {
+    const currentPath = pendingDirs.shift()
+    if (!currentPath) break
+    visited += await readSearchDir(
+      currentPath,
+      entries,
+      pendingDirs,
+      rootPath,
+      maxEntries - visited,
+    )
+  }
+
+  searchIndexCache.set(rootPath, { entries, expiresAt: Date.now() + SEARCH_CACHE_TTL_MS })
+  return entries
+}
+
+function formatSearchResults(entries: SearchEntry[]) {
+  return entries.map((e) => ({
+    path: e.path,
+    name: e.name,
+    kind: e.kind,
+    relativePath: e.relativePath,
+  }))
+}
+
+async function channelSearchComposerAttachmentEntries(params: unknown, res: ServerResponse) {
+  const p = params as { projectId?: string | null; query?: string | null; limit?: number | null }
+  const rootPath = path.resolve(p.projectId ?? process.cwd())
+  const query = (p.query?.trim() ?? '').toLowerCase()
+  const limit = Math.max(1, Math.min(p.limit ?? 50, 100))
+
+  const entries = await buildSearchIndex(rootPath)
+
+  if (!query) {
+    const sorted = entries
+      .sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1
+        return a.relativePath.localeCompare(b.relativePath)
+      })
+      .slice(0, limit)
+    sendJson(res, 200, formatSearchResults(sorted))
+    return
+  }
+
+  const hits = fuzzysort.go(query, entries, {
+    key: 'relativePath',
+    limit,
+  })
+
+  sendJson(res, 200, formatSearchResults(hits.map((h) => h.obj)))
+}
+
 async function channelListComposerAttachmentEntries(params: unknown, res: ServerResponse) {
   const p = params as {
     projectId?: string | null
@@ -614,7 +729,7 @@ const CHANNEL_HANDLERS: Record<string, ChannelHandler> = {
   invokeAction: channelInvokeAction,
   listProjectDirectoryEntries: channelListProjectDirectoryEntries,
   listComposerAttachmentEntries: channelListComposerAttachmentEntries,
-  searchComposerAttachmentEntries: channelStubArray,
+  searchComposerAttachmentEntries: channelSearchComposerAttachmentEntries,
   getAttachmentKindsForPaths: channelGetAttachmentKindsForPaths,
   pickComposerAttachments: channelStubArray,
   watchSession: channelStub,
