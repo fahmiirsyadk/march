@@ -3,6 +3,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { getLocalDraftChatGroupId, getPersistedSessionPath } from '../../../../shared/session-paths'
 import type { AppShellController } from '../../app-shell/useAppShellController'
+import { StreamingShaderOverlay } from '../../components/common/streaming-shader-overlay'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
 import { WorkspaceComposerDock } from '../../components/workspace/workspace-composer-dock'
@@ -422,9 +423,14 @@ function ChatArtifactFullscreen(props: ChatWorkspaceContentProps) {
 }
 
 function ChatWorkspaceViewContent(props: ChatWorkspaceContentProps) {
-  const { rootRef } = props
+  const { rootRef, activeThreadData, activeComposerState } = props
+  const isShaderActive =
+    (activeThreadData?.isStreaming ?? false) ||
+    (activeThreadData?.isCompacting ?? false) ||
+    (activeComposerState?.isExtensionCommandRunning ?? false)
   return (
     <div ref={rootRef} className="relative min-h-0 flex-1 overflow-hidden">
+      <StreamingShaderOverlay active={isShaderActive} />
       <ChatDesktopContent {...props} />
       <ChatArtifactDrawer {...props} />
       <ChatArtifactFullscreen {...props} />

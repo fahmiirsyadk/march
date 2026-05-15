@@ -3,6 +3,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { useRef, useState } from 'react'
 import { defaultPiSettings } from '../../../../shared/default-pi-settings'
 import type { AppShellController } from '../../app-shell/useAppShellController'
+import { StreamingShaderOverlay } from '../../components/common/streaming-shader-overlay'
 import { Composer } from '../../components/workspace/composer'
 import { QueuedPromptsCard } from '../../components/workspace/composer/queued-prompts-card'
 import { DiffPanel } from '../../components/workspace/diff-panel'
@@ -563,8 +564,14 @@ function CodeWorkspaceFooterArea(props: CodeWorkspaceContentProps) {
 }
 
 function CodeWorkspaceViewContent(props: CodeWorkspaceContentProps) {
+  const { activeThreadData, activeComposerState } = props
+  const isShaderActive =
+    (activeThreadData?.isStreaming ?? false) ||
+    (activeThreadData?.isCompacting ?? false) ||
+    (activeComposerState?.isExtensionCommandRunning ?? false)
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
+      <StreamingShaderOverlay active={isShaderActive} />
       <CodeWorkspaceMainArea {...props} />
       <CodeWorkspaceFooterArea {...props} />
     </div>
