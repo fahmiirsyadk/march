@@ -380,16 +380,31 @@ function direntKind(entry: fs.Dirent): 'directory' | 'file' | null {
 }
 
 const ignoredSearchDirs = new Set([
-  '.git',
-  '.hg',
-  '.svn',
   'node_modules',
-  'build',
+  'bower_components',
+  '.pnpm-store',
+  'vendor',
+  '.npm',
   'dist',
+  'build',
   'out',
   '.next',
+  'target',
+  'bin',
+  'obj',
+  '.git',
+  '.svn',
+  '.hg',
+  '.vscode',
+  '.idea',
   '.turbo',
-  '.vite',
+  '.output',
+  '.sst',
+  '.cache',
+  '__pycache__',
+  '.pytest_cache',
+  'mypy_cache',
+  '.gradle',
 ])
 
 type SearchEntry = {
@@ -490,7 +505,17 @@ async function channelSearchComposerAttachmentEntries(params: unknown, res: Serv
     limit,
   })
 
-  sendJson(res, 200, formatSearchResults(hits.map((h) => h.obj)))
+  sendJson(
+    res,
+    200,
+    hits.map((h) => ({
+      path: h.obj.path,
+      name: h.obj.name,
+      kind: h.obj.kind,
+      relativePath: h.obj.relativePath,
+      matchIndexes: h.indexes,
+    })),
+  )
 }
 
 async function channelListComposerAttachmentEntries(params: unknown, res: ServerResponse) {

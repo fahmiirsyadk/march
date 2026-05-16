@@ -1,10 +1,42 @@
 import { File, Folder } from 'lucide-react'
 import type { RefObject } from 'react'
+import { useCallback } from 'react'
 import { cn } from '../../../utils/cn'
 import {
   type ComposerFileMentions,
   getComposerFileMentionOptionId,
 } from './useComposerFileMentions'
+
+function HighlightedPath({ text, indexes }: { text: string; indexes?: number[] | undefined }) {
+  const renderContent = useCallback(() => {
+    if (!indexes || indexes.length === 0) {
+      return <span>{text}</span>
+    }
+
+    const indexSet = new Set(indexes)
+    const parts: { char: string; highlighted: boolean }[] = []
+    for (let i = 0; i < text.length; i++) {
+      parts.push({ char: text[i] as string, highlighted: indexSet.has(i) })
+    }
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          const key = `${i}-${part.char}`
+          return part.highlighted ? (
+            <span key={key} className="text-[color:var(--accent)] font-medium">
+              {part.char}
+            </span>
+          ) : (
+            <span key={key}>{part.char}</span>
+          )
+        })}
+      </>
+    )
+  }, [text, indexes])
+
+  return renderContent()
+}
 
 function FileMentionOption({
   file,
@@ -36,7 +68,7 @@ function FileMentionOption({
     >
       <Icon size={13} className="shrink-0 text-[color:var(--muted)]" />
       <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--text)]">
-        {file.relativePath}
+        <HighlightedPath text={file.relativePath} indexes={file.matchIndexes} />
       </span>
     </button>
   )

@@ -56,15 +56,17 @@ function evictExpiredSearchIndexes(now = Date.now()) {
 }
 
 function scoreFzfMatch(candidate: string, query: string) {
-  if (!query) return 0
+  if (!query) return null
   let score = 0
   let searchFrom = 0
   let previousIndex = -1
+  const indexes: number[] = []
 
   for (const character of query) {
     const index = candidate.indexOf(character, searchFrom)
     if (index === -1) return null
 
+    indexes.push(index)
     score += 1
     if (index === 0 || '/-_ .'.includes(candidate[index - 1] ?? '')) score += 3
     if (previousIndex >= 0 && index === previousIndex + 1) score += 5
@@ -74,21 +76,22 @@ function scoreFzfMatch(candidate: string, query: string) {
 
   if (candidate.includes(query)) score += 20
   score -= candidate.length / 200
-  return score
+  return { score, indexes }
 }
 
-function toFileSearchEntry(entry: SearchIndexEntry) {
+function toFileSearchEntry(entry: SearchIndexEntry, indexes?: number[] | undefined) {
   return {
     path: entry.path,
     name: entry.name,
     kind: entry.kind,
     relativePath: entry.relativePath,
+    matchIndexes: indexes,
   } satisfies ComposerFileSearchEntry
 }
 
 function addTopMatch(
-  matches: Array<{ entry: SearchIndexEntry; score: number }>,
-  match: { entry: SearchIndexEntry; score: number },
+  matches: Array<{ entry: SearchIndexEntry; score: number; indexes: number[] }>,
+  match: { entry: SearchIndexEntry; score: number; indexes: number[] },
   limit: number,
 ) {
   if (matches.length < limit) {
@@ -204,13 +207,16 @@ export async function searchComposerAttachmentEntries(request: {
   const limit = Math.max(1, Math.min(request.limit ?? 50, 100))
   const index = await buildSearchIndex(rootPath)
   if (!query)
-    return [...index].sort(compareSearchIndexEntries).slice(0, limit).map(toFileSearchEntry)
+    return [...index]
+      .sort(compareSearchIndexEntries)
+      .slice(0, limit)
+      .map((e) => toFileSearchEntry(e))
 
-  const matches: Array<{ entry: SearchIndexEntry; score: number }> = []
+  const matches: Array<{ entry: SearchIndexEntry; score: number; indexes: number[] }> = []
   for (const entry of index) {
-    const score = scoreFzfMatch(entry.lowerRelativePath, query)
-    if (score === null) continue
-    addTopMatch(matches, { entry, score }, limit)
+    const result = scoreFzfMatch(entry.lowerRelativePath, query)
+    if (result === null) continue
+    addTopMatch(matches, { entry, score: result.score, indexes: result.indexes }, limit)
   }
 
   return matches
@@ -218,7 +224,7 @@ export async function searchComposerAttachmentEntries(request: {
       (left, right) =>
         right.score - left.score || left.entry.relativePath.localeCompare(right.entry.relativePath),
     )
-    .map((match) => toFileSearchEntry(match.entry))
+    .map((match) => toFileSearchEntry(match.entry, match.indexes))
 }
 
 export async function normalizeDialogFilePaths(filePaths: string[]) {

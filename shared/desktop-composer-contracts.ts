@@ -75,6 +75,7 @@ export type ComposerFilePickerState = {
 
 export type ComposerFileSearchEntry = ComposerFilePickerEntry & {
   relativePath: string
+  matchIndexes?: number[] | undefined
 }
 
 export type ComposerStateRequest = {
