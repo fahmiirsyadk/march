@@ -28,19 +28,19 @@ export function buildComposerAttachmentPrompt(attachments: ComposerAttachment[])
 
   if (localFiles.length > 0) {
     sections.push(
-      `The user attached the following files, please read them:\n${localFiles.map((attachment) => `- ${attachment.path}`).join('\n')}`,
+      `<attached_files>\n${localFiles.map((attachment) => `- ${attachment.path}`).join('\n')}\n</attached_files>`,
     )
   }
 
   if (localDirectories.length > 0) {
     sections.push(
-      `The user attached the following folders, please inspect the relevant files within them if needed:\n${localDirectories.map((attachment) => `- ${attachment.path}`).join('\n')}`,
+      `<attached_directories>\n${localDirectories.map((attachment) => `- ${attachment.path}`).join('\n')}\n</attached_directories>`,
     )
   }
 
   if (externalReferences.length > 0) {
     sections.push(
-      `The user attached the following references, please use them if relevant:\n${externalReferences.map((attachment) => `- ${attachment.path}`).join('\n')}`,
+      `<external_references>\n${externalReferences.map((attachment) => `- ${attachment.path}`).join('\n')}\n</external_references>`,
     )
   }
 
