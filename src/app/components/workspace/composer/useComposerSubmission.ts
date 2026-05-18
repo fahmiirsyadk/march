@@ -425,47 +425,51 @@ export function useComposerSubmission({
     setIsSending,
   ])
 
-  const compact = useCallback(async () => {
-    if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
-      return
-    }
-
-    await withComposerSendLock(sendLockRef, async () => {
-      setIsSending(true)
-      setErrorMessage(null)
-
-      try {
-        const result = await submitComposerDraft({
-          draft: '/compact',
-          attachments: [],
-          isSending: false,
-          projectId,
-          chatGroupId,
-          sessionPath,
-          streamingBehaviorPreference,
-          onAction,
-        })
-
-        if (result.status === 'error') {
-          setErrorMessage(result.errorMessage)
-        }
-      } finally {
-        setIsSending(false)
+  const compact = useCallback(
+    async (instructions?: string) => {
+      if (isSending || isStreaming || isCompacting || !sessionPath || sendLockRef.current) {
+        return
       }
-    })
-  }, [
-    isCompacting,
-    isSending,
-    isStreaming,
-    chatGroupId,
-    onAction,
-    projectId,
-    sendLockRef,
-    sessionPath,
-    setErrorMessage,
-    setIsSending,
-    streamingBehaviorPreference,
-  ])
+
+      await withComposerSendLock(sendLockRef, async () => {
+        setIsSending(true)
+        setErrorMessage(null)
+
+        try {
+          const draft = instructions ? `/compact ${instructions}` : '/compact'
+          const result = await submitComposerDraft({
+            draft,
+            attachments: [],
+            isSending: false,
+            projectId,
+            chatGroupId,
+            sessionPath,
+            streamingBehaviorPreference,
+            onAction,
+          })
+
+          if (result.status === 'error') {
+            setErrorMessage(result.errorMessage)
+          }
+        } finally {
+          setIsSending(false)
+        }
+      })
+    },
+    [
+      isCompacting,
+      isSending,
+      isStreaming,
+      chatGroupId,
+      onAction,
+      projectId,
+      sendLockRef,
+      sessionPath,
+      setErrorMessage,
+      setIsSending,
+      streamingBehaviorPreference,
+    ],
+  )
 
   return {
     compact,

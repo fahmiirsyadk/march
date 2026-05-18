@@ -400,7 +400,7 @@ export function InboxComposer({
     skillMentions.selectedIndex,
   ])
 
-  const compact = async () => {
+  const compact = async (instructions?: string) => {
     if (sendLockRef.current || isSending || isStreaming || isCompacting || !thread.sessionPath) {
       return
     }
@@ -409,10 +409,11 @@ export function InboxComposer({
     setLocalActionPending(true)
     onChangeErrorMessage(null)
     try {
+      const text = instructions ? `/compact ${instructions}` : '/compact'
       const result = await onAction('composer.send', {
         projectId: thread.projectId,
         sessionPath: thread.sessionPath,
-        text: '/compact',
+        text,
         attachments: [],
         streamingBehavior: appSettings.composerStreamingBehavior,
         composerMode: thread.isChat ? 'chat' : 'code',
@@ -565,7 +566,7 @@ export function InboxComposer({
                     isStreaming || isCompacting || localActionPending || !thread.sessionPath
                   }
                   isCompacting={isCompacting}
-                  onCompact={() => void compact()}
+                  onCompact={(instructions) => void compact(instructions)}
                 />
               </div>
               {openMenu === 'model' ? (

@@ -38,7 +38,7 @@ type ComposerFooterProps = {
   preferSideModelPopover?: boolean | undefined
   onOpenGitOps: () => void
   onOpenTakeoverTerminal: () => void
-  onCompact: () => void
+  onCompact: (instructions: string) => void
   onSelectBaseline: (baseline: ProjectDiffBaseline) => void
   onSelectModel: (model: ComposerModel) => void
   onSelectThinkingLevel: (level: ComposerThinkingLevel) => void

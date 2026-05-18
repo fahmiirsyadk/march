@@ -29,7 +29,7 @@ export const appNewSessionSlashCommand: ComposerSlashCommand = {
 
 export const compactSlashCommand: ComposerSlashCommand = {
   name: 'compact',
-  description: 'Manually compact the session context',
+  description: 'Compact the session context. Add instructions to guide the summary.',
   source: 'builtin',
 }
 

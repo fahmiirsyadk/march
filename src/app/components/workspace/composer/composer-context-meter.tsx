@@ -4,13 +4,14 @@ import { useDismissibleLayer } from '../../../hooks/useDismissibleLayer'
 import type { Message } from '../../../types'
 import { ghostButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
+import { CompactDialog } from './composer-compact-dialog'
 
 type ComposerContextMeterProps = {
   contextUsage: ComposerContextUsage | null
   messages?: Message[] | undefined
   isCompacting: boolean
   compactDisabled: boolean
-  onCompact: () => void
+  onCompact: (instructions: string) => void
 }
 
 const tokenFormatter = new Intl.NumberFormat('en', {
@@ -188,7 +189,10 @@ export function ComposerContextMeter({
 }: ComposerContextMeterProps) {
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
+  const [showCompactDialog, setShowCompactDialog] = useState(false)
   const [usageTotals, setUsageTotals] = useState<UsageTotals | null>(null)
+  const [compactSavings, setCompactSavings] = useState<number | null>(null)
+  const preCompactTokens = useRef<number | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const clearHoverTriangleRef = useRef<(() => void) | null>(null)
@@ -197,6 +201,26 @@ export function ComposerContextMeter({
   const tone = getMeterTone(percent)
   const open = hovered || pinned
   const label = getContextMeterLabel(isCompacting, percent)
+
+  useEffect(() => {
+    if (isCompacting && preCompactTokens.current === null) {
+      preCompactTokens.current = tokens
+    }
+
+    if (!isCompacting && preCompactTokens.current !== null && tokens !== null) {
+      const saved = preCompactTokens.current - tokens
+      if (saved > 0) {
+        setCompactSavings(saved)
+        const timeout = window.setTimeout(() => setCompactSavings(null), 6000)
+        return () => window.clearTimeout(timeout)
+      }
+      preCompactTokens.current = null
+    }
+
+    if (!isCompacting) {
+      preCompactTokens.current = null
+    }
+  }, [isCompacting, tokens])
 
   useDismissibleLayer({
     open: pinned,
@@ -358,6 +382,11 @@ export function ComposerContextMeter({
               Compacting session context…
             </div>
           ) : null}
+          {compactSavings === null ? null : (
+            <div className="rounded-lg border border-[color:var(--accent-border)] bg-[color:var(--accent-bg-subtle)] px-2 py-1.5 text-[11px] text-[color:var(--accent)]">
+              Saved {formatTokens(compactSavings, { compact: true })} tokens
+            </div>
+          )}
           <button
             type="button"
             className={cn(
@@ -372,13 +401,26 @@ export function ComposerContextMeter({
 
               setHovered(false)
               setPinned(false)
-              onCompact()
+              setShowCompactDialog(true)
             }}
           >
             Compact
           </button>
         </div>
       ) : null}
+
+      {showCompactDialog && (
+        <CompactDialog
+          anchorRef={buttonRef}
+          isCompacting={isCompacting}
+          compactDisabled={compactDisabled}
+          onClose={() => setShowCompactDialog(false)}
+          onCompact={(instructions) => {
+            setShowCompactDialog(false)
+            onCompact(instructions)
+          }}
+        />
+      )}
     </div>
   )
 }

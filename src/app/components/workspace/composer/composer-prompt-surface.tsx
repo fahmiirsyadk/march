@@ -590,7 +590,7 @@ export function ComposerPromptSurface({
                 sessionPath,
               })
             }}
-            onCompact={() => void compact()}
+            onCompact={(instructions) => void compact(instructions)}
             onSetOpenMenu={setOpenMenu}
             onToggleTerminal={onToggleTerminal}
             onToggleArtifacts={onToggleArtifacts}
