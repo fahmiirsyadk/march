@@ -19,6 +19,7 @@ export async function loadThreadSnapshot(request: {
     thread: buildThreadData({
       sessionPath: request.sessionPath,
       sourceMessages: historySlice.sourceMessages,
+      entryIds: historySlice.sourceEntryIds,
       previousMessageCount: historySlice.previousMessageCount,
       isStreaming: false,
       isCompacting: false,

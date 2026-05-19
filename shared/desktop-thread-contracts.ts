@@ -93,6 +93,7 @@ export type ArchivedThread = {
 export type ProseMessage = {
   id: string
   role: 'assistant' | 'user'
+  entryId?: string | undefined
   format?: 'prose' | 'list' | undefined
   content: string[]
   isError?: boolean | undefined
@@ -115,6 +116,7 @@ export type AssistantUsageSummary = {
 export type ToolResultMessage = {
   id: string
   role: 'toolResult'
+  entryId?: string | undefined
   toolCallId?: string | undefined
   toolName: string
   content: string[]
@@ -133,6 +135,7 @@ export type ToolResultImage = {
 export type BashExecutionMessage = {
   id: string
   role: 'bashExecution'
+  entryId?: string | undefined
   command: string
   output: string[]
   exitCode: number | null
@@ -143,6 +146,7 @@ export type BashExecutionMessage = {
 export type CustomThreadMessage = {
   id: string
   role: 'custom'
+  entryId?: string | undefined
   customType: string
   content: string[]
   isError?: boolean | undefined
@@ -151,6 +155,7 @@ export type CustomThreadMessage = {
 export type SystemThreadMessage = {
   id: string
   role: 'system'
+  entryId?: string | undefined
   label: string
   content: string[]
 }
@@ -158,6 +163,7 @@ export type SystemThreadMessage = {
 export type SummaryThreadMessage = {
   id: string
   role: 'branchSummary' | 'compactionSummary'
+  entryId?: string | undefined
   content: string[]
 }
 

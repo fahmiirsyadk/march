@@ -1,3 +1,4 @@
+import type { DesktopActionInvoker } from '../../../desktop/types'
 import { ThreadMessage } from '../../common/thread-message'
 import { getCollapsedTurnPreview } from './thread-timeline-previews'
 import {
@@ -10,10 +11,12 @@ import { ToolCallsCard } from './tool-calls-card'
 
 type ThreadTimelineRowProps = {
   row: TimelineRow
+  sessionPath?: string | null | undefined
   collapsed: boolean
   streamingAssistantMessageId: string | null
   streamingToolGroupId: string | null
   expandedToolGroupIds: Record<string, boolean>
+  onAction?: DesktopActionInvoker | undefined
   onToggleRowCollapse: (rowId: string) => void
   onToggleToolCallExpansion: () => void
   onToggleToolGroupExpansion: (groupId: string) => void
@@ -49,13 +52,17 @@ function TurnRow({
   onToggleRowCollapse,
   renderTurnItem,
   row,
+  sessionPath,
   streamingAssistantMessageId,
+  onAction,
 }: {
   collapsed: boolean
   onToggleRowCollapse: (rowId: string) => void
   renderTurnItem: RenderTurnItem
   row: Extract<TimelineRow, { kind: 'turn' }>
+  sessionPath: string | null | undefined
   streamingAssistantMessageId: string | null
+  onAction: DesktopActionInvoker | undefined
 }) {
   const canCollapseTurn = isTurnRowCollapsible(row)
   const isStreamingTurn = row.items.some(
@@ -94,7 +101,11 @@ function TurnRow({
       <div className="grid min-w-0 gap-3">
         {row.userMessage ? (
           <RowLeadToggleSurface onToggle={onToggleTurnCollapse}>
-            <ThreadMessage message={row.userMessage} />
+            <ThreadMessage
+              message={row.userMessage}
+              sessionPath={sessionPath}
+              onAction={onAction}
+            />
           </RowLeadToggleSurface>
         ) : null}
         {row.items.map((item, index) =>
@@ -104,7 +115,9 @@ function TurnRow({
             onToggleTurnCollapse,
             renderTurnItem,
             row,
+            sessionPath,
             streamingAssistantMessageId,
+            onAction,
           }),
         )}
       </div>
@@ -118,19 +131,31 @@ function renderVisibleTurnItem(input: {
   onToggleTurnCollapse?: (() => void) | undefined
   renderTurnItem: RenderTurnItem
   row: Extract<TimelineRow, { kind: 'turn' }>
+  sessionPath: string | null | undefined
   streamingAssistantMessageId: string | null
+  onAction: DesktopActionInvoker | undefined
 }) {
-  const { item, index, onToggleTurnCollapse, renderTurnItem, row, streamingAssistantMessageId } =
-    input
+  const {
+    item,
+    index,
+    onToggleTurnCollapse,
+    renderTurnItem,
+    row,
+    sessionPath,
+    streamingAssistantMessageId,
+    onAction,
+  } = input
   if (row.userMessage || index > 0 || item.kind === 'tool-group') return renderTurnItem(item)
   if (item.message.role === 'assistant')
     return (
       <ThreadMessage
         key={`lead:${item.id}`}
         message={item.message}
+        sessionPath={sessionPath}
         autoExpandThinking={item.message.id === streamingAssistantMessageId}
         onToggleExpanded={onToggleTurnCollapse}
         primaryToggleAction={onToggleTurnCollapse}
+        onAction={onAction}
       />
     )
   return (
@@ -144,10 +169,14 @@ function SummaryRow({
   collapsed,
   onToggleRowCollapse,
   row,
+  sessionPath,
+  onAction,
 }: {
   collapsed: boolean
   onToggleRowCollapse: (rowId: string) => void
   row: Extract<TimelineRow, { kind: 'summary' }>
+  sessionPath: string | null | undefined
+  onAction: DesktopActionInvoker | undefined
 }) {
   const summaryLabel =
     row.message.role === 'branchSummary' ? 'Branch summary' : 'Compaction summary'
@@ -191,7 +220,7 @@ function SummaryRow({
           <div className="h-px w-full bg-[color:var(--border-strong)]" />
         ) : null}
         <RowLeadToggleSurface onToggle={onToggle}>
-          <ThreadMessage message={row.message} />
+          <ThreadMessage message={row.message} sessionPath={sessionPath} onAction={onAction} />
         </RowLeadToggleSurface>
       </div>
     </TimelineRowShell>
@@ -200,10 +229,12 @@ function SummaryRow({
 
 export function ThreadTimelineRow({
   row,
+  sessionPath,
   collapsed,
   streamingAssistantMessageId,
   streamingToolGroupId,
   expandedToolGroupIds,
+  onAction,
   onToggleRowCollapse,
   onToggleToolCallExpansion,
   onToggleToolGroupExpansion,
@@ -228,8 +259,10 @@ export function ThreadTimelineRow({
       <ThreadMessage
         key={item.id}
         message={item.message}
+        sessionPath={sessionPath}
         autoExpandThinking={item.message.id === streamingAssistantMessageId}
         onToggleExpanded={onToggleToolCallExpansion}
+        onAction={onAction}
       />
     )
   }
@@ -249,12 +282,22 @@ export function ThreadTimelineRow({
         onToggleRowCollapse={onToggleRowCollapse}
         renderTurnItem={renderTurnItem}
         row={row}
+        sessionPath={sessionPath}
         streamingAssistantMessageId={streamingAssistantMessageId}
+        onAction={onAction}
       />
     )
   }
   if (row.kind === 'summary') {
-    return <SummaryRow collapsed={collapsed} onToggleRowCollapse={onToggleRowCollapse} row={row} />
+    return (
+      <SummaryRow
+        collapsed={collapsed}
+        onToggleRowCollapse={onToggleRowCollapse}
+        row={row}
+        sessionPath={sessionPath}
+        onAction={onAction}
+      />
+    )
   }
 
   return <TimelineRowShell>{renderTurnItem(row)}</TimelineRowShell>

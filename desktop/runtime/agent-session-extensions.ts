@@ -154,7 +154,12 @@ function createHeadlessCommandContextActions(
   return {
     waitForIdle: () => session.agent.waitForIdle(),
     newSession: async () => extensionCommandCancelledResult,
-    fork: async () => extensionCommandCancelledResult,
+    fork: async (forkEntryId) => {
+      const entryId = forkEntryId ?? session.sessionManager.getLeafId()
+      if (!entryId) return extensionCommandCancelledResult
+      await session.sessionManager.createBranchedSession(entryId)
+      return { cancelled: false }
+    },
     navigateTree: async (targetId, navigateTreeOptions) => {
       const navigateOptions = {
         ...(navigateTreeOptions?.summarize === undefined

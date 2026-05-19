@@ -284,6 +284,7 @@ function ChatComposer(props: ChatWorkspaceContentProps) {
       preferSideModelPopover={!hasConversationLayout}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
+      doubleEscapeAction={shellState?.piSettings.doubleEscapeAction ?? 'none'}
     />
   )
 }

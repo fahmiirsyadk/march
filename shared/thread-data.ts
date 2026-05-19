@@ -5,6 +5,7 @@ import { getFirstUserTurnTitle, mapAgentMessagesToUiMessages } from './pi-messag
 type BuildThreadDataInput = {
   sessionPath: string
   sourceMessages: readonly AgentMessage[]
+  entryIds?: readonly string[]
   previousMessageCount: number
   isStreaming: boolean
   isCompacting?: boolean | undefined
@@ -13,11 +14,12 @@ type BuildThreadDataInput = {
 export function buildThreadData({
   sessionPath,
   sourceMessages,
+  entryIds,
   previousMessageCount,
   isStreaming,
   isCompacting = false,
 }: BuildThreadDataInput): ThreadData {
-  const messages = mapAgentMessagesToUiMessages([...sourceMessages])
+  const messages = mapAgentMessagesToUiMessages([...sourceMessages], entryIds)
 
   return {
     sessionPath,

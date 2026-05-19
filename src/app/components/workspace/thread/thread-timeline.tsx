@@ -1,5 +1,6 @@
 import { ArrowDownToLine, ListCollapse } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { DesktopActionInvoker } from '../../../desktop/types'
 import type { Message } from '../../../types'
 import { compactIconButtonClass } from '../../../ui/classes'
 import { CHAT_TEXT_MAX_WIDTH_CLASS } from '../../../ui/layout'
@@ -12,12 +13,14 @@ import { buildThreadTimelineState } from './thread-timeline-state'
 import type { TimelineRow } from './timeline-row'
 
 type ThreadTimelineProps = {
+  sessionPath?: string | null | undefined
   messages: Message[]
   previousMessageCount: number
   isStreaming: boolean
   isCompacting: boolean
   composerLayoutVersion: number
   composerOverlayHeight?: number
+  onAction?: DesktopActionInvoker | undefined
   onLoadEarlierMessages: () => void
 }
 
@@ -25,12 +28,14 @@ const timelineQuickActionButtonClass =
   'pointer-events-auto h-6 w-6 shrink-0 rounded-full bg-[color:var(--panel-2)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-45'
 
 export function ThreadTimeline({
+  sessionPath,
   messages,
   previousMessageCount,
   isStreaming,
   isCompacting,
   composerLayoutVersion,
   composerOverlayHeight = 0,
+  onAction,
   onLoadEarlierMessages,
 }: ThreadTimelineProps) {
   const [collapsedRowIds, setCollapsedRowIds] = useState<Record<string, boolean>>({})
@@ -268,10 +273,12 @@ export function ThreadTimeline({
       <div key={row.id} className="min-w-0" data-timeline-row-id={row.id}>
         <ThreadTimelineRow
           row={row}
+          sessionPath={sessionPath}
           collapsed={Boolean(effectiveCollapsedRowIds[row.id])}
           streamingAssistantMessageId={streamingAssistantMessageId}
           streamingToolGroupId={streamingToolGroupId}
           expandedToolGroupIds={expandedToolGroupIds}
+          onAction={onAction}
           onToggleRowCollapse={handleToggleRowCollapse}
           onToggleToolCallExpansion={handleToggleToolCallExpansion}
           onToggleToolGroupExpansion={handleToggleToolGroupExpansion}
@@ -280,12 +287,14 @@ export function ThreadTimeline({
       </div>
     ),
     [
+      sessionPath,
       effectiveCollapsedRowIds,
       expandedToolGroupIds,
       handleJumpToEarlierMessages,
       handleToggleRowCollapse,
       handleToggleToolCallExpansion,
       handleToggleToolGroupExpansion,
+      onAction,
       streamingAssistantMessageId,
       streamingToolGroupId,
     ],

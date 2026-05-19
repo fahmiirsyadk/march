@@ -66,6 +66,7 @@ type CodeWorkspaceMainViewProps = {
   onSetSkillsProjectScopeActive: (active: boolean) => void
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large view component with many props
 export function CodeWorkspaceMainView({
   activeView,
   appSettings,
@@ -102,6 +103,7 @@ export function CodeWorkspaceMainView({
     return (
       <ThreadView
         key={threadData?.sessionPath ?? 'new-thread'}
+        sessionPath={threadData?.sessionPath ?? null}
         messages={threadData?.messages ?? []}
         previousMessageCount={threadData?.previousMessageCount ?? 0}
         isStreaming={threadData?.isStreaming ?? false}
@@ -109,6 +111,7 @@ export function CodeWorkspaceMainView({
         composerLayoutVersion={composerLayoutVersion}
         composerOverlayHeight={composerOverlayHeight}
         loading={threadLoading}
+        onAction={onAction}
         onLoadEarlierMessages={onLoadEarlierMessages}
       />
     )

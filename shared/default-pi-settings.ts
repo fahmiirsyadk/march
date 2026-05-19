@@ -16,7 +16,7 @@ export const defaultPiSettings: PiSettings = {
   transport: 'auto',
   steeringMode: 'one-at-a-time',
   followUpMode: 'one-at-a-time',
-  doubleEscapeAction: 'tree',
+  doubleEscapeAction: 'none',
   treeFilterMode: 'default',
   editorPaddingX: 0,
   autocompleteMaxVisible: 5,

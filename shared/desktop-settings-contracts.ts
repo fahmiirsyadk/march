@@ -46,7 +46,7 @@ export type AppSettings = {
 
 export type PiTransportMode = 'sse' | 'websocket' | 'auto'
 export type PiQueueMode = 'all' | 'one-at-a-time'
-export type PiDoubleEscapeAction = 'fork' | 'tree' | 'none'
+export type PiDoubleEscapeAction = 'fork' | 'none'
 export type PiTreeFilterMode = 'default' | 'no-tools' | 'user-only' | 'labeled-only' | 'all'
 
 export type PiSettings = {

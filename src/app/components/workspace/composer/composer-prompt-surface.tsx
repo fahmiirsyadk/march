@@ -1,5 +1,5 @@
 import { Paperclip, X } from 'lucide-react'
-import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react'
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { getPersistedSessionPath } from '../../../../../shared/session-paths'
 import { compactIconButtonClass, compactRoundIconButtonClass } from '../../../ui/classes'
 import { cn } from '../../../utils/cn'
@@ -81,6 +81,7 @@ export function ComposerPromptSurface({
   onOpenGitOps,
   onOverlayHeightChange,
   showTerminalControls = true,
+  doubleEscapeAction,
 }: ComposerPromptSurfaceProps) {
   const {
     attachments,
@@ -106,6 +107,7 @@ export function ComposerPromptSurface({
     removeAttachment,
     runComposerAction,
     compact,
+    handleSessionAction,
     send,
     sendExtensionCommand,
     setDraft,
@@ -187,6 +189,23 @@ export function ComposerPromptSurface({
     setDraft,
     attachAttachments: attachPickerAttachments,
   })
+
+  const lastEscapeTimeRef = useRef(0)
+  const doubleEscapeActionRef = useRef(doubleEscapeAction)
+  doubleEscapeActionRef.current = doubleEscapeAction
+
+  const handleDoubleEscape = useCallback(() => {
+    const now = Date.now()
+    const elapsed = now - lastEscapeTimeRef.current
+    lastEscapeTimeRef.current = now
+    const action = doubleEscapeActionRef.current
+
+    if (elapsed < 400 && action === 'fork' && sessionPath) {
+      void onAction('session.fork', { sessionPath }).catch(() => undefined)
+      return true
+    }
+    return false
+  }, [onAction, sessionPath])
   const fileMentionListSignature = fileMentions.files
     .map((file) => `${file.kind}:${file.path}`)
     .join('|')
@@ -518,7 +537,9 @@ export function ComposerPromptSurface({
                       void answerNativeQuestions(null)
                       return true
                     }
-                  : undefined
+                  : draft.length === 0
+                    ? handleDoubleEscape
+                    : undefined
               }
               onArrowNavigationOverride={
                 showAskQuestions
@@ -543,6 +564,8 @@ export function ComposerPromptSurface({
             messages={messages}
             compactDisabled={isStreaming || isCompacting || !sessionPath}
             isCompacting={isCompacting}
+            isStreaming={isStreaming}
+            sessionPath={sessionPath}
             modelButtonRef={modelButtonRef}
             modelMenuOpen={modelMenuOpen}
             modelMenuRef={modelMenuRef}
@@ -591,6 +614,7 @@ export function ComposerPromptSurface({
               })
             }}
             onCompact={(instructions) => void compact(instructions)}
+            onSessionAction={handleSessionAction}
             onSetOpenMenu={setOpenMenu}
             onToggleTerminal={onToggleTerminal}
             onToggleArtifacts={onToggleArtifacts}

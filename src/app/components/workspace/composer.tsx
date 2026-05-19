@@ -7,6 +7,7 @@ import type {
   ComposerThinkingLevel,
   DesktopActionInvoker,
   NativeAskQuestionsRequest,
+  PiDoubleEscapeAction,
   ProjectDiffBaseline,
   ProjectDiffRenderMode,
   ProjectGitState,
@@ -71,6 +72,7 @@ export type ComposerProps = {
     rootPath?: string | null
   }) => Promise<ComposerFilePickerState | null>
   onAction: DesktopActionInvoker
+  doubleEscapeAction: PiDoubleEscapeAction
 }
 
 export function Composer(props: ComposerProps) {

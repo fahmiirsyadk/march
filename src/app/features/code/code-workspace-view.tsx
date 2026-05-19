@@ -441,6 +441,7 @@ function CodeThreadComposer(props: CodeWorkspaceContentProps) {
       terminalVisible={state.terminalVisible}
       onListAttachmentEntries={listComposerAttachmentEntries}
       onAction={handleAction}
+      doubleEscapeAction={shellState?.piSettings.doubleEscapeAction ?? 'none'}
     />
   )
 }

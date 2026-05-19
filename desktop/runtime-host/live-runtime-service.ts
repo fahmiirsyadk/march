@@ -684,3 +684,88 @@ export async function openThreadRuntime(request: ComposerStateRequest) {
     return composer
   })
 }
+
+export async function forkSession(request: ComposerStateRequest & { entryId?: string }) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  if (!persistedSessionPath) return { ok: false }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+    settingsCwd: request.composerSessionDir ?? null,
+    chatGroupId: request.chatGroupId ?? null,
+  })
+
+  if (runtime.session.isStreaming || runtime.session.isCompacting) {
+    scheduleRuntimeDisposal(persistedSessionPath)
+    throw new Error('Wait for the current response or compaction to finish before forking.')
+  }
+
+  const entryId = request.entryId ?? runtime.session.sessionManager.getLeafId()
+  if (!entryId) {
+    scheduleRuntimeDisposal(persistedSessionPath)
+    throw new Error('No entry to fork from.')
+  }
+
+  const newSessionPath = await runtime.session.sessionManager.createBranchedSession(entryId)
+  scheduleRuntimeDisposal(persistedSessionPath)
+
+  return {
+    ok: true as const,
+    newSessionPath,
+    forkedFromEntryId: entryId,
+  }
+}
+
+export async function navigateSessionTree(request: ComposerStateRequest & { entryId: string }) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  if (!persistedSessionPath) return { ok: false }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+    settingsCwd: request.composerSessionDir ?? null,
+    chatGroupId: request.chatGroupId ?? null,
+  })
+
+  if (runtime.session.isStreaming || runtime.session.isCompacting) {
+    scheduleRuntimeDisposal(persistedSessionPath)
+    throw new Error('Wait for the current response or compaction to finish before navigating.')
+  }
+
+  const result = await runtime.session.navigateTree(request.entryId)
+  scheduleRuntimeDisposal(persistedSessionPath)
+
+  await emitComposerUpdate({ ...request, sessionPath: persistedSessionPath })
+  await publishThreadUpdate(runtime, 'update').catch(() => undefined)
+
+  return { ok: true as const, cancelled: result.cancelled }
+}
+
+export async function cloneSession(request: ComposerStateRequest) {
+  const persistedSessionPath = getPersistedSessionPath(request.sessionPath)
+  if (!persistedSessionPath) return { ok: false }
+
+  const runtime = await getOrCreateRuntimeForSessionPath(persistedSessionPath, {
+    suspendDisposal: true,
+    settingsCwd: request.composerSessionDir ?? null,
+    chatGroupId: request.chatGroupId ?? null,
+  })
+
+  if (runtime.session.isStreaming || runtime.session.isCompacting) {
+    scheduleRuntimeDisposal(persistedSessionPath)
+    throw new Error('Wait for the current response or compaction to finish before cloning.')
+  }
+
+  const leafId = runtime.session.sessionManager.getLeafId()
+  if (!leafId) {
+    scheduleRuntimeDisposal(persistedSessionPath)
+    throw new Error('No branch to clone.')
+  }
+
+  const newSessionPath = await runtime.session.sessionManager.createBranchedSession(leafId)
+  scheduleRuntimeDisposal(persistedSessionPath)
+
+  return {
+    ok: true as const,
+    newSessionPath,
+  }
+}

@@ -69,7 +69,7 @@ function asPiQueueMode(value: unknown): PiSettings['steeringMode'] | null {
 }
 
 function asPiDoubleEscapeAction(value: unknown): PiSettings['doubleEscapeAction'] | null {
-  return value === 'fork' || value === 'tree' || value === 'none' ? value : null
+  return value === 'fork' || value === 'none' ? value : null
 }
 
 function asPiTreeFilterMode(value: unknown): PiSettings['treeFilterMode'] | null {

@@ -1,5 +1,5 @@
 import { Bot, FileCode2, GitBranch, Terminal } from 'lucide-react'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
+import { type Dispatch, type RefObject, type SetStateAction, useRef } from 'react'
 import type {
   ComposerContextUsage,
   ComposerModel,
@@ -20,7 +20,10 @@ import {
 import { ComposerContextMeter } from './composer-context-meter'
 import { ComposerDiffBaselineSelector } from './composer-diff-baseline-selector'
 import { ComposerModelPopover } from './composer-model-popover'
+import { ComposerSessionActions } from './composer-session-actions'
 import { getGitOpsEntryButtonClass } from './git-ops'
+
+type SessionAction = 'fork' | 'clone'
 
 type ComposerFooterProps = {
   availableModels: ComposerModel[]
@@ -32,6 +35,8 @@ type ComposerFooterProps = {
   messages?: Message[] | undefined
   compactDisabled: boolean
   isCompacting: boolean
+  isStreaming: boolean
+  sessionPath: string | null
   modelButtonRef: RefObject<HTMLButtonElement | null>
   modelMenuOpen: boolean
   modelMenuRef: RefObject<HTMLDivElement | null>
@@ -45,6 +50,7 @@ type ComposerFooterProps = {
   onSetOpenMenu: Dispatch<SetStateAction<'model' | 'picker' | null>>
   onToggleArtifacts?: (() => void) | undefined
   onToggleTerminal: () => void
+  onSessionAction: (action: SessionAction) => void
   projectGitState: ProjectGitState | null
   projectId: string
   showTerminalControls?: boolean | undefined
@@ -65,6 +71,8 @@ export function ComposerFooter({
   messages,
   compactDisabled,
   isCompacting,
+  isStreaming,
+  sessionPath,
   modelButtonRef,
   modelMenuOpen,
   modelMenuRef,
@@ -78,6 +86,7 @@ export function ComposerFooter({
   onSetOpenMenu,
   onToggleArtifacts,
   onToggleTerminal,
+  onSessionAction,
   projectGitState,
   projectId,
   showTerminalControls = true,
@@ -87,6 +96,7 @@ export function ComposerFooter({
   thinkingLevel,
   thinkingLevelLabels,
 }: ComposerFooterProps) {
+  const sessionActionsButtonRef = useRef<HTMLButtonElement>(null)
   const gitVisualMode = projectGitState?.isGitRepo
     ? projectGitState.fileCount > 0
       ? 'dirty'
@@ -152,6 +162,13 @@ export function ComposerFooter({
           />
         ) : null}
       </div>
+      <ComposerSessionActions
+        anchorRef={sessionActionsButtonRef}
+        isStreaming={isStreaming}
+        isCompacting={isCompacting}
+        disabled={!sessionPath}
+        onSelect={onSessionAction}
+      />
       <div className={workspaceFooterTrailingGroupClass}>
         {projectGitState?.isGitRepo ? (
           <ComposerDiffBaselineSelector

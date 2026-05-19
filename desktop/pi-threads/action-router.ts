@@ -36,7 +36,3 @@ export async function handleDesktopAction(
 
   return assertUnhandledDesktopAction(action)
 }
-  }
-
-  return assertUnhandledDesktopAction(action)
-}

@@ -208,6 +208,20 @@ export type DesktopActionPayloadMap = {
     requestId: string
     answers: string[][] | null
   }
+  'session.fork': {
+    projectId?: string | null | undefined
+    sessionPath?: string | null | undefined
+    entryId?: string | undefined
+  }
+  'session.navigate-tree': {
+    projectId?: string | null | undefined
+    sessionPath?: string | null | undefined
+    entryId: string
+  }
+  'session.clone': {
+    projectId?: string | null | undefined
+    sessionPath?: string | null | undefined
+  }
   'inbox.mark-read': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.dismiss': { sessionPath: string; projectId?: string | undefined | null | undefined }
   'inbox.clear-read': { olderThanDays?: number | undefined | null | undefined }

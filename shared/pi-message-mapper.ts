@@ -392,20 +392,26 @@ function mapFallbackMessage(id: string, runtimeMessage: RuntimeMessage): Message
 export function mapAgentMessageToUiMessage(
   agentMessage: AgentMessage,
   messageIndex: number,
+  entryId?: string | undefined,
 ): Message | null {
   const runtimeMessage = agentMessage as RuntimeMessage
   const id = `${runtimeMessage.timestamp ?? messageIndex}-${runtimeMessage.role ?? 'message'}`
 
+  let base: Message | null = null
+
   switch (runtimeMessage.role) {
     case 'user':
-      return mapUserMessage(id, runtimeMessage)
+      base = mapUserMessage(id, runtimeMessage)
+      break
     case 'assistant':
-      return mapAssistantMessage(id, runtimeMessage)
+      base = mapAssistantMessage(id, runtimeMessage)
+      break
     case 'toolResult':
-      return mapToolResultMessage(id, runtimeMessage)
+      base = mapToolResultMessage(id, runtimeMessage)
+      break
 
     case 'bashExecution': {
-      return {
+      base = {
         id,
         role: 'bashExecution',
         command: runtimeMessage.command ?? '',
@@ -414,24 +420,38 @@ export function mapAgentMessageToUiMessage(
         cancelled: Boolean(runtimeMessage.cancelled),
         truncated: Boolean(runtimeMessage.truncated),
       }
+      break
     }
 
     case 'custom':
-      return mapCustomMessage(id, runtimeMessage)
+      base = mapCustomMessage(id, runtimeMessage)
+      break
     case 'system':
-      return mapSystemMessage(id, runtimeMessage)
+      base = mapSystemMessage(id, runtimeMessage)
+      break
 
     case 'branchSummary':
     case 'compactionSummary':
-      return mapSummaryMessage(id, runtimeMessage)
+      base = mapSummaryMessage(id, runtimeMessage)
+      break
     default:
-      return mapFallbackMessage(id, runtimeMessage)
+      base = mapFallbackMessage(id, runtimeMessage)
   }
+
+  if (base && entryId) {
+    base.entryId = entryId
+  }
+  return base
 }
 
-export function mapAgentMessagesToUiMessages(messages: AgentMessage[]) {
+export function mapAgentMessagesToUiMessages(
+  messages: AgentMessage[],
+  entryIds?: readonly string[] | undefined,
+) {
   return messages
-    .map((agentMessage, messageIndex) => mapAgentMessageToUiMessage(agentMessage, messageIndex))
+    .map((agentMessage, messageIndex) =>
+      mapAgentMessageToUiMessage(agentMessage, messageIndex, entryIds?.[messageIndex]),
+    )
     .filter((uiMessage): uiMessage is Message => uiMessage !== null)
 }
 

@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getDesktopActionErrorMessage } from '../../../../desktop/action-results'
 import type { DesktopAction } from '../../../../desktop/actions'
 import { getErrorMessage } from '../../../../desktop/error-messages'
@@ -279,6 +279,15 @@ export function useComposerController({
     setErrorMessage,
   })
 
+  const handleSessionAction = useCallback(
+    (action: 'fork' | 'clone') => {
+      if (!sessionPath) return
+      const desktopAction = action === 'fork' ? 'session.fork' : 'session.clone'
+      void onAction(desktopAction, { sessionPath }).catch(() => undefined)
+    },
+    [onAction, sessionPath],
+  )
+
   return {
     attachments,
     handleDrop,
@@ -307,6 +316,7 @@ export function useComposerController({
     removeAttachment,
     runComposerAction,
     compact,
+    handleSessionAction,
     send,
     sendExtensionCommand,
     setDraft: setDraftValue,

@@ -1,4 +1,4 @@
-import { Check, Clipboard } from 'lucide-react'
+import { Check, Clipboard, GitFork, Undo2 } from 'lucide-react'
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import type {
   BashExecutionMessage,
@@ -7,6 +7,7 @@ import type {
   SystemThreadMessage,
   ToolResultMessage,
 } from '../../../../shared/desktop-thread-contracts'
+import type { DesktopActionInvoker } from '../../desktop/types'
 import type { Message } from '../../types'
 import { getThinkingPreview } from '../../utils/thread-previews'
 import { ExpandablePanel } from './expandable-panel'
@@ -59,11 +60,13 @@ function CopyMessageButton({ label, text }: { label: string; text: string }) {
 
 type ThreadMessageProps = {
   message: Message
+  sessionPath?: string | null | undefined
   autoExpandThinking?: boolean | undefined
   onToggleExpanded?: (() => void) | undefined
   firstCardOnly?: boolean | undefined
   disableInnerExpansion?: boolean | undefined
   primaryToggleAction?: (() => void) | undefined
+  onAction?: DesktopActionInvoker | undefined
 }
 
 function renderProse(content: string[], format: 'prose' | 'list' = 'prose') {
@@ -380,6 +383,52 @@ function SystemMessageBlock({ message }: { message: SystemThreadMessage }) {
 }
 
 function ThreadMessageComponent(props: ThreadMessageProps) {
+  const { message, sessionPath, onAction } = props
+  const content = renderMessageBlock(props)
+  if (!content) return null
+
+  if (!(sessionPath && onAction)) return content
+
+  const entryId = message.entryId
+  if (!entryId) return content
+
+  return (
+    <div className="group/turn relative min-w-0">
+      {content}
+      <div className="mt-1 flex items-center gap-1 opacity-0 transition-opacity duration-150 ease-out group-hover/turn:opacity-100">
+        <button
+          type="button"
+          className="inline-flex h-6 items-center gap-1 rounded-md border border-[color:var(--border)] bg-[color:var(--panel)] px-2 text-[10px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+          onClick={(e) => {
+            e.stopPropagation()
+            void onAction('session.navigate-tree', { sessionPath, entryId } as Record<
+              string,
+              unknown
+            >)
+          }}
+          title="Undo to this point"
+        >
+          <Undo2 className="h-3 w-3" />
+          Undo
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-6 items-center gap-1 rounded-md border border-[color:var(--border)] bg-[color:var(--panel)] px-2 text-[10px] text-[color:var(--muted)] transition-colors duration-150 ease-out hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text)]"
+          onClick={(e) => {
+            e.stopPropagation()
+            void onAction('session.fork', { sessionPath, entryId } as Record<string, unknown>)
+          }}
+          title="Fork a new session from here"
+        >
+          <GitFork className="h-3 w-3" />
+          Fork
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function renderMessageBlock(props: ThreadMessageProps): React.ReactNode {
   const { message } = props
   if (message.role === 'user') return <UserMessageBlock message={message} />
   if (message.role === 'assistant') return <AssistantMessageBlock {...props} message={message} />
@@ -397,4 +446,5 @@ function ThreadMessageComponent(props: ThreadMessageProps) {
   }
   return null
 }
+
 export const ThreadMessage = memo(ThreadMessageComponent)

@@ -41,6 +41,7 @@ export type {
   PiConfiguredPackage,
   PiConfiguredPackageType,
   PiConfiguredSkill,
+  PiDoubleEscapeAction,
   PiPackageCatalogItem,
   PiPackageCatalogPage,
   PiPackageMutationResult,

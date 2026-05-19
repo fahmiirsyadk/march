@@ -376,7 +376,7 @@ describe('pi message mapper', () => {
   })
 
   it('surfaces model and thinking changes as muted system messages', () => {
-    const messages = buildSourceMessagesFromPathEntries([
+    const { messages } = buildSourceMessagesFromPathEntries([
       {
         type: 'model_change',
         id: 'model-1',
@@ -403,7 +403,7 @@ describe('pi message mapper', () => {
   })
 
   it('surfaces standalone thinking changes as reasoning messages', () => {
-    const messages = buildSourceMessagesFromPathEntries([
+    const { messages } = buildSourceMessagesFromPathEntries([
       {
         type: 'thinking_level_change',
         id: 'thinking-1',

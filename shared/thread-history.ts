@@ -55,6 +55,7 @@ function countDisplayableEntriesInRange(
 
 function appendModelChangeMessage(
   messages: AgentMessage[],
+  entryIds: string[],
   entry: SessionPathEntry,
   nextEntry: SessionPathEntry | undefined,
 ) {
@@ -76,11 +77,16 @@ function appendModelChangeMessage(
     label: 'Model changed',
     timestamp: entry.timestamp ?? Date.now(),
   } as unknown as AgentMessage)
+  entryIds.push(entry.id)
 
   return Boolean(thinkingLevel)
 }
 
-function appendThinkingLevelChangeMessage(messages: AgentMessage[], entry: SessionPathEntry) {
+function appendThinkingLevelChangeMessage(
+  messages: AgentMessage[],
+  entryIds: string[],
+  entry: SessionPathEntry,
+) {
   const thinkingLevel = entry.thinkingLevel?.trim()
   if (!thinkingLevel) {
     return
@@ -92,10 +98,12 @@ function appendThinkingLevelChangeMessage(messages: AgentMessage[], entry: Sessi
     label: 'Reasoning changed',
     timestamp: entry.timestamp ?? Date.now(),
   } as unknown as AgentMessage)
+  entryIds.push(entry.id)
 }
 
 function appendEntryMessage(
   messages: AgentMessage[],
+  entryIds: string[],
   entry: SessionPathEntry,
   nextEntry: SessionPathEntry | undefined,
 ) {
@@ -103,6 +111,7 @@ function appendEntryMessage(
     case 'message':
       if (entry.message) {
         messages.push(entry.message)
+        entryIds.push(entry.id)
       }
       return
     case 'custom_message':
@@ -116,6 +125,7 @@ function appendEntryMessage(
         content: entry.content ?? '',
         timestamp: entry.timestamp ?? Date.now(),
       } as unknown as AgentMessage)
+      entryIds.push(entry.id)
       return
     case 'branch_summary':
       if (!entry.summary?.trim()) {
@@ -127,11 +137,12 @@ function appendEntryMessage(
         summary: entry.summary,
         timestamp: entry.timestamp ?? Date.now(),
       } as unknown as AgentMessage)
+      entryIds.push(entry.id)
       return
     case 'model_change':
-      return appendModelChangeMessage(messages, entry, nextEntry)
+      return appendModelChangeMessage(messages, entryIds, entry, nextEntry)
     case 'thinking_level_change':
-      appendThinkingLevelChangeMessage(messages, entry)
+      appendThinkingLevelChangeMessage(messages, entryIds, entry)
       return false
     case 'compaction':
       if (!entry.summary?.trim()) {
@@ -152,14 +163,16 @@ function appendEntryMessage(
 
 export function buildSourceMessagesFromPathEntries(pathEntries: SessionPathEntry[]) {
   const messages: AgentMessage[] = []
+  const entryIds: string[] = []
 
-  appendSourceMessagesFromEntryRange(messages, pathEntries, 0, pathEntries.length)
+  appendSourceMessagesFromEntryRange(messages, entryIds, pathEntries, 0, pathEntries.length)
 
-  return messages
+  return { messages, entryIds }
 }
 
 function appendSourceMessagesFromEntryRange(
   messages: AgentMessage[],
+  entryIds: string[],
   pathEntries: SessionPathEntry[],
   startIndex: number,
   endIndex: number,
@@ -167,7 +180,12 @@ function appendSourceMessagesFromEntryRange(
   for (let index = startIndex; index < endIndex; index += 1) {
     const entry = pathEntries[index]
     if (entry) {
-      const consumedNextEntry = appendEntryMessage(messages, entry, pathEntries[index + 1])
+      const consumedNextEntry = appendEntryMessage(
+        messages,
+        entryIds,
+        entry,
+        pathEntries[index + 1],
+      )
       if (consumedNextEntry) {
         index += 1
       }
@@ -213,8 +231,10 @@ export function buildThreadHistorySlice(
 ) {
   const selectedCompactionIndex = getSelectedCompactionIndex(pathEntries, revealedCompactions)
   if (selectedCompactionIndex === -1) {
+    const { messages, entryIds } = buildSourceMessagesFromPathEntries(pathEntries)
     return {
-      sourceMessages: buildSourceMessagesFromPathEntries(pathEntries),
+      sourceMessages: messages,
+      sourceEntryIds: entryIds,
       previousMessageCount: 0,
     }
   }
@@ -224,15 +244,19 @@ export function buildThreadHistorySlice(
   const firstKeptIndex = firstKeptEntryId ? findEntryIndexById(pathEntries, firstKeptEntryId) : -1
 
   if (!selectedCompaction || firstKeptIndex === -1 || firstKeptIndex > selectedCompactionIndex) {
+    const { messages, entryIds } = buildSourceMessagesFromPathEntries(pathEntries)
     return {
-      sourceMessages: buildSourceMessagesFromPathEntries(pathEntries),
+      sourceMessages: messages,
+      sourceEntryIds: entryIds,
       previousMessageCount: 0,
     }
   }
 
   const sourceMessages: AgentMessage[] = []
+  const sourceEntryIds: string[] = []
   appendSourceMessagesFromEntryRange(
     sourceMessages,
+    sourceEntryIds,
     pathEntries,
     firstKeptIndex,
     pathEntries.length,
@@ -240,6 +264,7 @@ export function buildThreadHistorySlice(
 
   return {
     sourceMessages,
+    sourceEntryIds,
     previousMessageCount: countDisplayableEntriesInRange(pathEntries, 0, firstKeptIndex),
   }
 }

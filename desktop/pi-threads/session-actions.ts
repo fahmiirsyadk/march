@@ -1,7 +1,11 @@
 import type { DesktopAction } from '../../shared/desktop-actions.ts'
 import type { AnyDesktopActionPayload } from '../../shared/desktop-contracts.ts'
 import { getSessionPath } from '../../shared/pi-thread-action-payloads.ts'
-import { forkSession, navigateSessionTree } from '../runtime-host/live-runtime-service.ts'
+import {
+  cloneSession,
+  forkSession,
+  navigateSessionTree,
+} from '../runtime-host/live-runtime-service.ts'
 import type { ActionHandlerResult } from './action-router-result.ts'
 import { handledAction, unhandledAction } from './action-router-result.ts'
 
@@ -44,6 +48,22 @@ const sessionActionHandlers = {
     } catch (error) {
       return handledAction({
         error: error instanceof Error ? error.message : 'Failed to navigate session tree.',
+      })
+    }
+  },
+  'session.clone': async (payload) => {
+    const sessionPath = getSessionPath(payload)
+    if (!sessionPath) return handledAction()
+
+    try {
+      const result = await cloneSession({ sessionPath })
+      return handledAction({
+        didMutate: true,
+        newSessionPath: result.newSessionPath,
+      })
+    } catch (error) {
+      return handledAction({
+        error: error instanceof Error ? error.message : 'Failed to clone session.',
       })
     }
   },
